@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { LobbyList } from '@/components/LobbyList';
 import { CreateLobby } from '@/components/CreateLobby';
@@ -20,6 +20,17 @@ export default function GamePage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [view, setView] = useState<'list' | 'room'>('list');
 
+  // Lobi listesini al
+  const fetchLobbies = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/lobbies?gameType=${gameType}`);
+      const data = await response.json();
+      setLobbies(data.lobbies || []);
+    } catch (error) {
+      console.error('Error fetching lobbies:', error);
+    }
+  }, [gameType]);
+
   useEffect(() => {
     if (!username) {
       router.push('/');
@@ -27,17 +38,6 @@ export default function GamePage() {
     }
 
     const socket = getSocket();
-
-    // Lobi listesini al
-    const fetchLobbies = async () => {
-      try {
-        const response = await fetch(`/api/lobbies?gameType=${gameType}`);
-        const data = await response.json();
-        setLobbies(data.lobbies || []);
-      } catch (error) {
-        console.error('Error fetching lobbies:', error);
-      }
-    };
 
     // İlk yükleme
     fetchLobbies();
@@ -104,7 +104,7 @@ export default function GamePage() {
       socket.off('game:started');
       socket.off('error');
     };
-  }, [gameType, username, router]);
+  }, [gameType, username, router, fetchLobbies]);
 
   const handleCreateLobby = async (selectedGameType: GameType) => {
     if (!username) return;
