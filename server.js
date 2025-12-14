@@ -2,7 +2,7 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
-const { lobbyManager } = require('./lib/lobbyManager.js');
+const { lobbyManager } = require('./lib/lobbyManagerSingleton.js');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0';

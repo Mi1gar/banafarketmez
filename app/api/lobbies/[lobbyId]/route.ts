@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// CommonJS lobbyManager'ı kullan (server.js ile aynı instance)
-const { lobbyManager } = require('@/lib/lobbyManager.js');
+// Global singleton lobbyManager instance kullan
+// @ts-ignore - CommonJS module
+const lobbyManagerModule = require('@/lib/lobbyManagerSingleton.js');
+const lobbyManager = lobbyManagerModule.lobbyManager || lobbyManagerModule.default?.lobbyManager;
 
 export async function GET(
   request: NextRequest,

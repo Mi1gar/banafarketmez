@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// CommonJS lobbyManager'ı kullan (server.js ile aynı instance)
-const { lobbyManager } = require('@/lib/lobbyManager.js');
+// Global singleton lobbyManager instance kullan
+// @ts-ignore - CommonJS module
+const lobbyManagerModule = require('@/lib/lobbyManagerSingleton.js');
+const lobbyManager = lobbyManagerModule.lobbyManager || lobbyManagerModule.default?.lobbyManager;
+
 type GameType = 'rock-paper-scissors' | 'tic-tac-toe' | 'number-guessing';
 
 export async function GET(request: NextRequest) {
@@ -46,8 +49,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!lobbyManager) {
+      console.error('API: lobbyManager is not available');
+      return NextResponse.json(
+        { error: 'Lobi yöneticisi kullanılamıyor' },
+        { status: 500 }
+      );
+    }
+
     const lobby = lobbyManager.createLobby(gameType, host);
     console.log('API: Lobby created:', lobby.id, 'for game:', gameType, 'host:', host);
+    console.log('API: Total lobbies now:', lobbyManager.getAllLobbies().length);
     
     return NextResponse.json({ lobby }, { status: 201 });
   } catch (error) {
