@@ -72,11 +72,17 @@ export async function POST(
 
       case 'leave':
         console.log('API: Leaving lobby:', lobbyId, 'player:', player);
+        if (!lobbyManager) {
+          return NextResponse.json(
+            { error: 'Lobi yöneticisi kullanılamıyor' },
+            { status: 500 }
+          );
+        }
         lobby = lobbyManager.leaveLobby(lobbyId, player);
         if (!lobby) {
           console.log('API: Lobby closed (no players left):', lobbyId);
           return NextResponse.json(
-            { message: 'Lobiden ayrıldınız, lobi kapandı' },
+            { message: 'Lobiden ayrıldınız, lobi kapandı', lobby: null },
             { status: 200 }
           );
         }

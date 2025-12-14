@@ -148,6 +148,9 @@ app.prepare().then(() => {
 
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
+      // Disconnect olduğunda kullanıcının tüm lobilerinden ayrılması gerekebilir
+      // Ancak bu durumda kullanıcı bilgisi yok, bu yüzden sadece log tutuyoruz
+      // Gerçek uygulamada socket.id ile kullanıcı mapping'i yapılabilir
     });
   });
 
