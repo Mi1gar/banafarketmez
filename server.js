@@ -39,8 +39,9 @@ app.prepare().then(() => {
       try {
         const lobby = lobbyManager.createLobby(data.gameType, data.host);
         socket.join(`lobby:${lobby.id}`);
-        io.emit('lobby:created', lobby);
         socket.emit('lobby:created', lobby);
+        // Tüm kullanıcılara lobi listesi güncellendiğini bildir
+        io.emit('lobby:list-updated');
       } catch (error) {
         console.error('Error creating lobby:', error);
         socket.emit('error', { message: 'Lobi oluşturulamadı' });

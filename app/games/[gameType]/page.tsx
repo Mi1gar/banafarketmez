@@ -39,7 +39,19 @@ export default function GamePage() {
       }
     };
 
+    // İlk yükleme
     fetchLobbies();
+
+    // Socket bağlantısı kurulduğunda
+    socket.on('connect', () => {
+      console.log('Socket connected');
+      fetchLobbies();
+    });
+
+    // Socket bağlantı hatası
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
 
     // Socket event listeners
     socket.on('lobby:list', (lobbiesList: Lobby[]) => {
@@ -47,16 +59,19 @@ export default function GamePage() {
     });
 
     socket.on('lobby:list-updated', () => {
+      console.log('Lobby list updated');
       fetchLobbies();
     });
 
     socket.on('lobby:created', (lobby: Lobby) => {
+      console.log('Lobby created:', lobby);
       setCurrentLobby(lobby);
       setView('room');
       fetchLobbies();
     });
 
     socket.on('lobby:updated', (lobby: Lobby) => {
+      console.log('Lobby updated:', lobby);
       if (currentLobby && lobby.id === currentLobby.id) {
         setCurrentLobby(lobby);
       }
@@ -69,14 +84,27 @@ export default function GamePage() {
       router.push(`/games/${gameType}/play?lobbyId=${lobby.id}`);
     });
 
+    socket.on('error', (error: any) => {
+      console.error('Socket error:', error);
+    });
+
+    // Periyodik olarak lobi listesini yenile (fallback)
+    const interval = setInterval(() => {
+      fetchLobbies();
+    }, 5000); // 5 saniyede bir
+
     return () => {
+      clearInterval(interval);
+      socket.off('connect');
+      socket.off('connect_error');
       socket.off('lobby:list');
       socket.off('lobby:list-updated');
       socket.off('lobby:created');
       socket.off('lobby:updated');
       socket.off('game:started');
+      socket.off('error');
     };
-  }, [gameType, username, router, currentLobby]);
+  }, [gameType, username, router]);
 
   const handleCreateLobby = async (selectedGameType: GameType) => {
     if (!username) return;

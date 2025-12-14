@@ -10,10 +10,23 @@ export const getSocket = (): Socket => {
       (typeof window !== 'undefined' ? window.location.origin : '');
     socket = io(socketUrl, {
       path: '/api/socket',
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
+      timeout: 20000,
+    });
+    
+    socket.on('connect', () => {
+      console.log('Socket.io connected:', socket?.id);
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Socket.io disconnected');
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('Socket.io connection error:', error);
     });
   }
   return socket;
