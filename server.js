@@ -34,9 +34,9 @@ app.prepare().then(() => {
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
 
-    // Lobi oluşturma
+    // Lobi oluşturma (fallback - API route başarısız olursa)
     socket.on('lobby:create', (data) => {
-      console.log('lobby:create event received:', data);
+      console.log('lobby:create event received (fallback):', data);
       try {
         if (!data.gameType || !data.host) {
           console.error('Missing gameType or host:', data);
@@ -44,7 +44,7 @@ app.prepare().then(() => {
           return;
         }
         const lobby = lobbyManager.createLobby(data.gameType, data.host);
-        console.log('Lobby created:', lobby.id, 'for game:', data.gameType, 'host:', data.host);
+        console.log('Lobby created (fallback):', lobby.id, 'for game:', data.gameType, 'host:', data.host);
         socket.join(`lobby:${lobby.id}`);
         socket.emit('lobby:created', lobby);
         // Tüm kullanıcılara lobi listesi güncellendiğini bildir
@@ -56,16 +56,33 @@ app.prepare().then(() => {
       }
     });
 
+    // Lobi oluşturuldu bildirimi (API route ile oluşturulduktan sonra)
+    socket.on('lobby:created-notify', (data) => {
+      console.log('lobby:created-notify event received:', data);
+      if (data.lobbyId) {
+        socket.join(`lobby:${data.lobbyId}`);
+        // Tüm kullanıcılara lobi listesi güncellendiğini bildir
+        io.emit('lobby:list-updated');
+        console.log('lobby:list-updated event emitted (after API create)');
+      }
+    });
+
     // Lobiye katılma
     socket.on('lobby:join', (data) => {
+      console.log('lobby:join event received:', data);
       try {
         const lobby = lobbyManager.joinLobby(data.lobbyId, data.player);
         if (lobby) {
+          console.log('Player joined lobby:', data.player, 'lobby:', lobby.id, 'players:', lobby.players);
           socket.join(`lobby:${lobby.id}`);
+          // Lobi odasındaki tüm oyunculara güncellenmiş lobi bilgisini gönder
           io.to(`lobby:${lobby.id}`).emit('lobby:updated', lobby);
+          // Tüm kullanıcılara lobi listesi güncellendiğini bildir
           io.emit('lobby:list-updated');
+          console.log('lobby:updated and lobby:list-updated events emitted');
         } else {
-          socket.emit('error', { message: 'Lobiye katılamadı' });
+          console.error('Failed to join lobby:', data.lobbyId, 'player:', data.player);
+          socket.emit('error', { message: 'Lobiye katılamadı (lobi dolu veya bulunamadı)' });
         }
       } catch (error) {
         console.error('Error joining lobby:', error);
@@ -75,13 +92,22 @@ app.prepare().then(() => {
 
     // Lobiden ayrılma
     socket.on('lobby:leave', (data) => {
+      console.log('lobby:leave event received:', data);
       try {
         const lobby = lobbyManager.leaveLobby(data.lobbyId, data.player);
         socket.leave(`lobby:${data.lobbyId}`);
         if (lobby) {
+          console.log('Player left lobby, remaining players:', lobby.players);
+          // Kalan oyunculara güncellenmiş lobi bilgisini gönder
           io.to(`lobby:${data.lobbyId}`).emit('lobby:updated', lobby);
+        } else {
+          console.log('Lobby closed (no players left):', data.lobbyId);
+          // Lobi kapandı, odadaki herkese bildir
+          io.to(`lobby:${data.lobbyId}`).emit('lobby:closed', { lobbyId: data.lobbyId });
         }
+        // Tüm kullanıcılara lobi listesi güncellendiğini bildir
         io.emit('lobby:list-updated');
+        console.log('lobby:list-updated event emitted (after leave)');
       } catch (error) {
         console.error('Error leaving lobby:', error);
       }

@@ -48,25 +48,39 @@ export async function POST(
 
     let lobby;
 
+    if (!lobbyManager) {
+      console.error('API: lobbyManager is not available');
+      return NextResponse.json(
+        { error: 'Lobi yöneticisi kullanılamıyor' },
+        { status: 500 }
+      );
+    }
+
     switch (action) {
       case 'join':
+        console.log('API: Joining lobby:', lobbyId, 'player:', player);
         lobby = lobbyManager.joinLobby(lobbyId, player);
         if (!lobby) {
+          console.error('API: Failed to join lobby:', lobbyId);
           return NextResponse.json(
             { error: 'Lobiye katılamadı (lobi dolu veya bulunamadı)' },
             { status: 400 }
           );
         }
+        console.log('API: Player joined, lobby now has:', lobby.players.length, 'players');
         break;
 
       case 'leave':
+        console.log('API: Leaving lobby:', lobbyId, 'player:', player);
         lobby = lobbyManager.leaveLobby(lobbyId, player);
         if (!lobby) {
+          console.log('API: Lobby closed (no players left):', lobbyId);
           return NextResponse.json(
-            { message: 'Lobiden ayrıldınız' },
+            { message: 'Lobiden ayrıldınız, lobi kapandı' },
             { status: 200 }
           );
         }
+        console.log('API: Player left, remaining players:', lobby.players.length);
         break;
 
       case 'start':

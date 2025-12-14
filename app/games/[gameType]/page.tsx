@@ -72,8 +72,22 @@ export default function GamePage() {
 
     socket.on('lobby:updated', (lobby: Lobby) => {
       console.log('Lobby updated:', lobby);
+      // Eğer bu lobi bizim mevcut lobimizse, state'i güncelle
       if (currentLobby && lobby.id === currentLobby.id) {
+        console.log('Updating current lobby state:', lobby);
         setCurrentLobby(lobby);
+      }
+      // Lobi listesini de güncelle
+      fetchLobbies();
+    });
+
+    socket.on('lobby:closed', (data: { lobbyId: string }) => {
+      console.log('Lobby closed:', data.lobbyId);
+      // Eğer kapalı lobi bizim mevcut lobimizse, listeye dön
+      if (currentLobby && currentLobby.id === data.lobbyId) {
+        setCurrentLobby(null);
+        setView('list');
+        alert('Lobi kapandı (tüm oyuncular ayrıldı)');
       }
       fetchLobbies();
     });
@@ -88,19 +102,52 @@ export default function GamePage() {
       console.error('Socket error:', error);
     });
 
-    // Periyodik olarak lobi listesini yenile (fallback)
-    const interval = setInterval(() => {
-      fetchLobbies();
-    }, 5000); // 5 saniyede bir
+    // Periyodik olarak lobi listesini yenile (sadece Socket.io bağlı değilse)
+    // Socket.io bağlıysa gerçek zamanlı güncellemeler kullanılır
+    let interval: NodeJS.Timeout | null = null;
+    const checkConnection = () => {
+      if (!socket.connected) {
+        // Socket bağlı değilse polling yap
+        if (!interval) {
+          interval = setInterval(() => {
+            if (!socket.connected) {
+              fetchLobbies();
+            }
+          }, 10000); // 10 saniyede bir (daha az sıklıkta)
+        }
+      } else {
+        // Socket bağlıysa polling'i durdur
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      }
+    };
+
+    // İlk kontrol
+    checkConnection();
+    
+    // Socket bağlantı durumu değiştiğinde kontrol et
+    socket.on('connect', () => {
+      checkConnection();
+    });
+    
+    socket.on('disconnect', () => {
+      checkConnection();
+    });
 
     return () => {
-      clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
       socket.off('connect');
+      socket.off('disconnect');
       socket.off('connect_error');
       socket.off('lobby:list');
       socket.off('lobby:list-updated');
       socket.off('lobby:created');
       socket.off('lobby:updated');
+      socket.off('lobby:closed');
       socket.off('game:started');
       socket.off('error');
     };
@@ -129,11 +176,11 @@ export default function GamePage() {
         setCurrentLobby(data.lobby);
         setView('room');
         
-        // Socket.io'ya da bildir
+        // Socket.io'ya sadece bildirim gönder (yeni lobi oluşturma!)
         const socket = getSocket();
-        socket.emit('lobby:create', {
-          gameType: selectedGameType,
-          host: username,
+        // Lobi zaten API route ile oluşturuldu, sadece diğer kullanıcılara bildir
+        socket.emit('lobby:created-notify', {
+          lobbyId: data.lobby.id,
         });
         
         // Lobi listesini yenile
@@ -156,28 +203,67 @@ export default function GamePage() {
   const handleJoinLobby = async (lobbyId: string) => {
     if (!username) return;
 
-    const socket = getSocket();
-    socket.emit('lobby:join', {
-      lobbyId,
-      player: username,
-    });
-
-    // Lobi bilgisini al
     try {
-      const response = await fetch(`/api/lobbies/${lobbyId}`);
+      // Önce API route ile katıl
+      const response = await fetch(`/api/lobbies/${lobbyId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'join',
+          player: username,
+        }),
+      });
+
       const data = await response.json();
-      if (data.lobby) {
+      
+      if (response.ok && data.lobby) {
+        console.log('Joined lobby via API:', data.lobby);
         setCurrentLobby(data.lobby);
         setView('room');
+        
+        // Socket.io'ya da bildir
+        const socket = getSocket();
+        socket.emit('lobby:join', {
+          lobbyId,
+          player: username,
+        });
+      } else {
+        console.error('Failed to join lobby:', data);
+        alert('Lobiye katılamadı: ' + (data.error || 'Bilinmeyen hata'));
       }
     } catch (error) {
       console.error('Error joining lobby:', error);
+      // Fallback: Sadece Socket.io ile dene
+      const socket = getSocket();
+      socket.emit('lobby:join', {
+        lobbyId,
+        player: username,
+      });
     }
   };
 
-  const handleLeaveLobby = () => {
+  const handleLeaveLobby = async () => {
     if (!currentLobby || !username) return;
 
+    try {
+      // API route ile de ayrıl
+      await fetch(`/api/lobbies/${currentLobby.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'leave',
+          player: username,
+        }),
+      });
+    } catch (error) {
+      console.error('Error leaving lobby via API:', error);
+    }
+
+    // Socket.io ile de bildir
     const socket = getSocket();
     socket.emit('lobby:leave', {
       lobbyId: currentLobby.id,
