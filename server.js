@@ -14,7 +14,16 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     try {
+      // Tüm request'leri logla
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+      
       const parsedUrl = parse(req.url, true);
+      
+      // API route'ları özel olarak logla
+      if (req.url?.startsWith('/api/')) {
+        console.log('API Request:', req.method, req.url, 'Query:', parsedUrl.query);
+      }
+      
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);

@@ -23,11 +23,14 @@ export default function GamePage() {
   // Lobi listesini al
   const fetchLobbies = useCallback(async () => {
     try {
+      console.log('[Frontend] Fetching lobbies for gameType:', gameType);
       const response = await fetch(`/api/lobbies?gameType=${gameType}`);
+      console.log('[Frontend] Fetch response status:', response.status);
       const data = await response.json();
+      console.log('[Frontend] Fetched lobbies:', data.lobbies?.length || 0);
       setLobbies(data.lobbies || []);
     } catch (error) {
-      console.error('Error fetching lobbies:', error);
+      console.error('[Frontend] Error fetching lobbies:', error);
     }
   }, [gameType]);
 
@@ -215,12 +218,18 @@ export default function GamePage() {
   }, [gameType, username, router, fetchLobbies]);
 
   const handleCreateLobby = async (selectedGameType: GameType) => {
-    if (!username) return;
+    if (!username) {
+      console.error('handleCreateLobby: No username');
+      return;
+    }
 
+    console.log('[Frontend] Creating lobby for gameType:', selectedGameType, 'host:', username);
+    
     // Loading state ekle (duplicate request önlemek için)
     setShowCreateModal(false);
 
     try {
+      console.log('[Frontend] Sending POST request to /api/lobbies');
       // Önce API route ile lobi oluştur (daha güvenilir)
       const response = await fetch('/api/lobbies', {
         method: 'POST',
@@ -233,15 +242,20 @@ export default function GamePage() {
         }),
       });
 
+      console.log('[Frontend] Response status:', response.status, response.statusText);
+
       if (!response.ok) {
+        console.error('[Frontend] Response not OK:', response.status);
         const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+        console.error('[Frontend] Error data:', errorData);
         throw new Error(errorData.error || 'Failed to create lobby');
       }
 
       const data = await response.json();
+      console.log('[Frontend] Response data:', data);
       
       if (data.lobby) {
-        console.log('Lobby created via API:', data.lobby);
+        console.log('[Frontend] Lobby created via API successfully:', data.lobby);
         setCurrentLobby(data.lobby);
         setView('room');
         
