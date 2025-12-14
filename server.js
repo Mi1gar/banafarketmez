@@ -36,12 +36,20 @@ app.prepare().then(() => {
 
     // Lobi oluşturma
     socket.on('lobby:create', (data) => {
+      console.log('lobby:create event received:', data);
       try {
+        if (!data.gameType || !data.host) {
+          console.error('Missing gameType or host:', data);
+          socket.emit('error', { message: 'gameType ve host gerekli' });
+          return;
+        }
         const lobby = lobbyManager.createLobby(data.gameType, data.host);
+        console.log('Lobby created:', lobby.id, 'for game:', data.gameType, 'host:', data.host);
         socket.join(`lobby:${lobby.id}`);
         socket.emit('lobby:created', lobby);
         // Tüm kullanıcılara lobi listesi güncellendiğini bildir
         io.emit('lobby:list-updated');
+        console.log('lobby:list-updated event emitted to all clients');
       } catch (error) {
         console.error('Error creating lobby:', error);
         socket.emit('error', { message: 'Lobi oluşturulamadı' });

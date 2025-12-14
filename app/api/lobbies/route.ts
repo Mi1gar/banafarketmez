@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { lobbyManager, GameType } from '@/lib/lobbyManager';
+
+// CommonJS lobbyManager'ı kullan (server.js ile aynı instance)
+const { lobbyManager } = require('@/lib/lobbyManager.js');
+type GameType = 'rock-paper-scissors' | 'tic-tac-toe' | 'number-guessing';
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,6 +10,7 @@ export async function GET(request: NextRequest) {
     const gameType = searchParams.get('gameType') as GameType | null;
 
     const lobbies = lobbyManager.getAllLobbies(gameType || undefined);
+    console.log('API: Fetching lobbies, found:', lobbies.length, 'for gameType:', gameType);
     
     return NextResponse.json({ lobbies }, { status: 200 });
   } catch (error) {
@@ -43,6 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const lobby = lobbyManager.createLobby(gameType, host);
+    console.log('API: Lobby created:', lobby.id, 'for game:', gameType, 'host:', host);
     
     return NextResponse.json({ lobby }, { status: 201 });
   } catch (error) {

@@ -109,11 +109,48 @@ export default function GamePage() {
   const handleCreateLobby = async (selectedGameType: GameType) => {
     if (!username) return;
 
-    const socket = getSocket();
-    socket.emit('lobby:create', {
-      gameType: selectedGameType,
-      host: username,
-    });
+    try {
+      // Önce API route ile lobi oluştur (daha güvenilir)
+      const response = await fetch('/api/lobbies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameType: selectedGameType,
+          host: username,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.lobby) {
+        console.log('Lobby created via API:', data.lobby);
+        setCurrentLobby(data.lobby);
+        setView('room');
+        
+        // Socket.io'ya da bildir
+        const socket = getSocket();
+        socket.emit('lobby:create', {
+          gameType: selectedGameType,
+          host: username,
+        });
+        
+        // Lobi listesini yenile
+        fetchLobbies();
+      } else {
+        console.error('Failed to create lobby:', data);
+        alert('Lobi oluşturulamadı: ' + (data.error || 'Bilinmeyen hata'));
+      }
+    } catch (error) {
+      console.error('Error creating lobby:', error);
+      // Fallback: Sadece Socket.io ile dene
+      const socket = getSocket();
+      socket.emit('lobby:create', {
+        gameType: selectedGameType,
+        host: username,
+      });
+    }
   };
 
   const handleJoinLobby = async (lobbyId: string) => {
