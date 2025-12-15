@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const lobbies = lobbyManager.getAllLobbies(gameType || undefined);
     console.log('[API GET /api/lobbies] Found lobbies:', lobbies.length, 'for gameType:', gameType);
-    console.log('[API GET /api/lobbies] Lobby IDs:', lobbies.map(l => l.id));
+    console.log('[API GET /api/lobbies] Lobby IDs:', lobbies.map((l: any) => l.id));
     
     return NextResponse.json({ lobbies }, { status: 200 });
   } catch (error) {
