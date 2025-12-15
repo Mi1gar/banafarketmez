@@ -177,15 +177,22 @@ app.prepare().then(() => {
         
         // Eğer lobby zaten in-game status'ündeyse, sadece game:started event'ini tekrar gönder
         if (checkLobby.status === 'in-game') {
-          console.log('Lobby already in-game, resending game:started event');
-          io.to(`lobby:${checkLobby.id}`).emit('game:started', {
+          console.log('Lobby already in-game, resending game:started event to all players');
+          const gameStartedData = {
             lobby: checkLobby,
             gameType: checkLobby.gameType,
             players: checkLobby.players,
             player1Name: checkLobby.players[0],
             player2Name: checkLobby.players[1] || checkLobby.players[0],
-          });
-          console.log('game:started event re-emitted to lobby:', checkLobby.id);
+          };
+          
+          // Tüm oyunculara gönder
+          io.to(`lobby:${checkLobby.id}`).emit('game:started', gameStartedData);
+          console.log('game:started event re-emitted to lobby:', checkLobby.id, 'data:', JSON.stringify(gameStartedData));
+          
+          // Socket room üyelerini kontrol et
+          const room = io.sockets.adapter.rooms.get(`lobby:${checkLobby.id}`);
+          console.log('Socket room members:', room ? Array.from(room).length : 0, 'players');
           return;
         }
         
