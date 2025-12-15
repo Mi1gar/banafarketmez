@@ -131,10 +131,29 @@ app.prepare().then(() => {
 
     // Oyun başlatma
     socket.on('lobby:start', (data) => {
+      console.log('lobby:start event received:', data);
       try {
+        if (!data.lobbyId) {
+          console.error('Missing lobbyId in lobby:start');
+          socket.emit('error', { message: 'lobbyId gerekli' });
+          return;
+        }
+        
         const lobby = lobbyManager.startGame(data.lobbyId);
         if (lobby) {
-          io.to(`lobby:${lobby.id}`).emit('game:started', lobby);
+          console.log('Game started for lobby:', lobby.id, 'players:', lobby.players);
+          // Lobi bilgileri ile birlikte oyun başlatma event'i gönder
+          io.to(`lobby:${lobby.id}`).emit('game:started', {
+            lobby,
+            gameType: lobby.gameType,
+            players: lobby.players,
+            player1Name: lobby.players[0],
+            player2Name: lobby.players[1] || lobby.players[0],
+          });
+          console.log('game:started event emitted to lobby:', lobby.id);
+        } else {
+          console.error('Failed to start game for lobby:', data.lobbyId);
+          socket.emit('error', { message: 'Oyun başlatılamadı (lobi bulunamadı veya dolu değil)' });
         }
       } catch (error) {
         console.error('Error starting game:', error);
@@ -144,7 +163,10 @@ app.prepare().then(() => {
 
     // Oyun hamlesi
     socket.on('game:move', (data) => {
+      console.log('game:move event received:', data);
+      // Tüm oyunculara hamleyi ilet
       io.to(`lobby:${data.lobbyId}`).emit('game:move', data);
+      console.log('game:move event emitted to lobby:', data.lobbyId);
     });
 
     // Oyun bitişi

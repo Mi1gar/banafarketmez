@@ -36,8 +36,14 @@ export const RockPaperScissors: React.FC<RockPaperScissorsProps> = ({
     { value: 'scissors', emoji: '✂️', label: 'Makas' },
   ];
 
-  const isPlayerTurn = currentPlayer === player1Name;
-  const bothChose = player1Choice && player2Choice;
+  const isPlayer1 = currentPlayer === player1Name;
+  const isPlayer2 = currentPlayer === player2Name;
+  const hasPlayer1Chosen = player1Choice !== null;
+  const hasPlayer2Chosen = player2Choice !== null;
+  const bothChose = hasPlayer1Chosen && hasPlayer2Chosen;
+  
+  // Oyuncu seçim yapabilir mi?
+  const canMakeChoice = (isPlayer1 && !hasPlayer1Chosen) || (isPlayer2 && !hasPlayer2Chosen);
 
   let result: { winner: string | null; message: string } | null = null;
   if (bothChose) {
@@ -85,7 +91,7 @@ export const RockPaperScissors: React.FC<RockPaperScissorsProps> = ({
         </div>
       )}
 
-      {!bothChose && isPlayerTurn && (
+      {!bothChose && canMakeChoice && (
         <div className="space-y-4">
           <p className="text-center text-lg font-semibold mb-4">
             Seçiminizi yapın:
@@ -95,8 +101,7 @@ export const RockPaperScissors: React.FC<RockPaperScissorsProps> = ({
               <button
                 key={choice.value}
                 onClick={() => onMove(choice.value)}
-                className="p-6 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-4xl"
-                disabled={!isPlayerTurn}
+                className="p-6 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-4xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div>{choice.emoji}</div>
                 <div className="text-sm mt-2">{choice.label}</div>
@@ -106,9 +111,13 @@ export const RockPaperScissors: React.FC<RockPaperScissorsProps> = ({
         </div>
       )}
 
-      {!bothChose && !isPlayerTurn && (
+      {!bothChose && !canMakeChoice && (
         <div className="text-center p-4 bg-gray-100 rounded-lg">
-          <p className="text-lg">Rakibinizin seçimini bekleyin...</p>
+          <p className="text-lg">
+            {hasPlayer1Chosen && isPlayer1 ? 'Seçiminiz yapıldı, rakibinizi bekleyin...' :
+             hasPlayer2Chosen && isPlayer2 ? 'Seçiminiz yapıldı, rakibinizi bekleyin...' :
+             'Rakibinizin seçimini bekleyin...'}
+          </p>
         </div>
       )}
     </div>

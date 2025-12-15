@@ -107,11 +107,12 @@ export default function GamePage() {
       fetchLobbies();
     };
 
-    const handleGameStarted = (lobby: Lobby) => {
+    const handleGameStarted = (data: { lobby: Lobby; gameType: string; players: string[]; player1Name: string; player2Name: string }) => {
       if (!isMounted) return;
-      setCurrentLobby(lobby);
-      // Oyun sayfasına yönlendir
-      router.push(`/games/${gameType}/play?lobbyId=${lobby.id}`);
+      console.log('GamePage: game:started event received:', data);
+      setCurrentLobby(data.lobby);
+      // Oyun sayfasına yönlendir (lobi bilgileri ile)
+      router.push(`/games/${data.gameType}/play?lobbyId=${data.lobby.id}`);
     };
 
     const handleError = (error: any) => {

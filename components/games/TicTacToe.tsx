@@ -28,9 +28,10 @@ export const TicTacToe: React.FC<TicTacToeProps> = ({
   isDraw,
   onMove,
 }) => {
-  const isPlayerTurn =
-    (currentPlayer === player1Name && player1Mark === 'X') ||
-    (currentPlayer === player2Name && player2Mark === 'X');
+  // Sıra kontrolü - currentPlayer kimse o sıra
+  const isPlayerTurn = currentPlayer === player1Name || currentPlayer === player2Name;
+  const isCurrentPlayerX = (currentPlayer === player1Name && player1Mark === 'X') ||
+                          (currentPlayer === player2Name && player2Mark === 'X');
 
   const getMarkDisplay = (mark: TicTacToeMark) => {
     if (mark === 'X') return '❌';
@@ -77,16 +78,16 @@ export const TicTacToe: React.FC<TicTacToeProps> = ({
           <button
             key={index}
             onClick={() => {
-              if (!cell && !winner && !isDraw && isPlayerTurn) {
+              if (!cell && !winner && !isDraw && isCurrentPlayerX) {
                 onMove(index);
               }
             }}
-            disabled={!!cell || !!winner || isDraw || !isPlayerTurn}
+            disabled={!!cell || !!winner || isDraw || !isCurrentPlayerX}
             className={`
               w-24 h-24 text-4xl font-bold rounded-lg transition-colors
               ${cell ? 'bg-gray-100' : 'bg-gray-200 hover:bg-gray-300'}
               ${isWinningCell(index) ? 'bg-green-200' : ''}
-              ${!cell && !winner && !isDraw && isPlayerTurn ? 'cursor-pointer' : 'cursor-not-allowed'}
+              ${!cell && !winner && !isDraw && isCurrentPlayerX ? 'cursor-pointer' : 'cursor-not-allowed'}
             `}
           >
             {getMarkDisplay(cell)}
@@ -94,7 +95,7 @@ export const TicTacToe: React.FC<TicTacToeProps> = ({
         ))}
       </div>
 
-      {!isPlayerTurn && !winner && !isDraw && (
+      {!isCurrentPlayerX && !winner && !isDraw && (
         <div className="text-center mt-4 p-4 bg-gray-100 rounded-lg">
           <p className="text-lg">Rakibinizin hamlesini bekleyin...</p>
         </div>
