@@ -97,5 +97,3 @@ export const LobbyRoom: React.FC<LobbyRoomProps> = ({
   );
 };
 
-
-

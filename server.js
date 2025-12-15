@@ -5,7 +5,6 @@ const { Server } = require('socket.io');
 const { lobbyManager } = require('./lib/lobbyManagerSingleton.js');
 
 const dev = process.env.NODE_ENV !== 'production';
-// 0.0.0.0 tüm network interface'lerinden erişime izin verir (dışarıdan bağlanma için gerekli)
 const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = process.env.PORT || 3000;
 
@@ -15,16 +14,7 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     try {
-      // Tüm request'leri logla
-      console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-      
       const parsedUrl = parse(req.url, true);
-      
-      // API route'ları özel olarak logla
-      if (req.url?.startsWith('/api/')) {
-        console.log('API Request:', req.method, req.url, 'Query:', parsedUrl.query);
-      }
-      
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);

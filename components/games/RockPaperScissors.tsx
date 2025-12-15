@@ -115,5 +115,3 @@ export const RockPaperScissors: React.FC<RockPaperScissorsProps> = ({
   );
 };
 
-
-

@@ -25,6 +25,7 @@ export const CreateLobby: React.FC<CreateLobbyProps> = ({
   };
 
   const handleCreate = () => {
+    console.log('CreateLobby: handleCreate called, gameType:', gameType);
     onCreate(gameType);
     onClose();
   };
@@ -52,6 +53,4 @@ export const CreateLobby: React.FC<CreateLobbyProps> = ({
     </Modal>
   );
 };
-
-
 
