@@ -310,9 +310,11 @@ export default function PlayPage() {
       const guess = move.guess;
       const target = prev.targetNumber;
       
-      if (target !== null) {
+      if (target !== null && target !== undefined) {
         const newGuesses = [...(prev.guesses || []), guess];
         const newHints = [...(prev.hints || [])];
+        const minRange = prev.minRange || 1;
+        const maxRange = prev.maxRange || 100;
         
         if (guess === target) {
           // Doğru tahmin!
@@ -335,7 +337,7 @@ export default function PlayPage() {
           };
         } else {
           // İpucu oluştur
-          const hint = generateHint(guess, target, prev.minRange || 1, prev.maxRange || 100);
+          const hint = generateHint(guess, target, minRange, maxRange);
           newHints.push(hint);
           return {
             ...prev,
