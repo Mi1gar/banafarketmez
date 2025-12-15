@@ -83,6 +83,20 @@ app.prepare().then(() => {
           // Oyuncu zaten lobide, sadece socket room'a ekle ve güncelle
           console.log('Player already in lobby, just joining socket room:', data.player);
           socket.join(`lobby:${existingLobby.id}`);
+          console.log('Socket joined room:', `lobby:${existingLobby.id}`, 'socket id:', socket.id);
+          
+          // Eğer oyun zaten başlamışsa, game:started event'ini gönder
+          if (existingLobby.status === 'in-game') {
+            console.log('Lobby already in-game, sending game:started to player:', data.player);
+            socket.emit('game:started', {
+              lobby: existingLobby,
+              gameType: existingLobby.gameType,
+              players: existingLobby.players,
+              player1Name: existingLobby.players[0],
+              player2Name: existingLobby.players[1] || existingLobby.players[0],
+            });
+          }
+          
           io.to(`lobby:${existingLobby.id}`).emit('lobby:updated', existingLobby);
           io.emit('lobby:list-updated');
           return;
@@ -178,15 +192,27 @@ app.prepare().then(() => {
         const lobby = lobbyManager.startGame(data.lobbyId);
         if (lobby) {
           console.log('Game started for lobby:', lobby.id, 'players:', lobby.players);
+          
+          // Tüm oyuncuların socket room'a katıldığından emin ol
+          const room = io.sockets.adapter.rooms.get(`lobby:${lobby.id}`);
+          console.log('Socket room members for lobby:', lobby.id, ':', room ? Array.from(room) : 'no room');
+          
           // Lobi bilgileri ile birlikte oyun başlatma event'i gönder
-          io.to(`lobby:${lobby.id}`).emit('game:started', {
+          const gameStartedData = {
             lobby,
             gameType: lobby.gameType,
             players: lobby.players,
             player1Name: lobby.players[0],
             player2Name: lobby.players[1] || lobby.players[0],
+          };
+          
+          io.to(`lobby:${lobby.id}`).emit('game:started', gameStartedData);
+          console.log('game:started event emitted to lobby:', lobby.id, 'data:', JSON.stringify(gameStartedData));
+          
+          // Ayrıca tüm oyunculara direkt olarak da gönder (fallback)
+          lobby.players.forEach((player: string) => {
+            console.log('Sending game:started to player:', player);
           });
-          console.log('game:started event emitted to lobby:', lobby.id);
         } else {
           console.error('Failed to start game for lobby:', data.lobbyId);
           const currentLobby = lobbyManager.getLobby(data.lobbyId);
