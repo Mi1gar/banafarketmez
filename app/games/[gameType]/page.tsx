@@ -408,9 +408,18 @@ export default function GamePage() {
       if (response.ok) {
         const data = await response.json();
         if (data.lobby && data.lobby.status === 'in-game') {
-          // Oyun başlatıldı, direkt yönlendir (game:started event'i gelecek)
+          // Oyun başlatıldı, direkt yönlendir
           console.log('Game started via API, redirecting to play page');
           router.push(`/games/${gameType}/play?lobbyId=${currentLobby.id}`);
+          
+          // Socket.io'ya da bildir ki diğer oyuncular da yönlendirilsin
+          const socket = getSocket();
+          if (socket.connected) {
+            // Lobby zaten in-game, sadece game:started event'ini tetikle
+            socket.emit('lobby:start', {
+              lobbyId: currentLobby.id,
+            });
+          }
         } else if (data.lobby) {
           // Lobby güncellendi ama oyun başlamadı, Socket.io event'i gönder
           const socket = getSocket();
