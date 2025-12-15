@@ -64,6 +64,22 @@ Klasik taş kağıt makas oyunu. Rakibinizi yenmeye çalışın!
 ### Sayı Tahmin Oyunu
 Bir oyuncu sayı seçer, diğeri tahmin eder. İpuçları ile yardımcı olunur.
 
+## Lokal Sunucu ile Dışarıdan Erişim
+
+Sunucuyu lokal bilgisayarınızda çalıştırıp başka yerlerden erişilebilir hale getirmek için [LOCAL_DEPLOYMENT.md](LOCAL_DEPLOYMENT.md) dosyasına bakın.
+
+**Hızlı Başlangıç (ngrok ile):**
+```bash
+# 1. Sunucuyu başlat
+npm run dev
+
+# 2. Başka bir terminal'de ngrok başlat
+ngrok http 3000
+
+# 3. .env.local dosyası oluştur ve ngrok URL'ini ekle
+echo "NEXT_PUBLIC_SOCKET_URL=https://YOUR_NGROK_URL" > .env.local
+```
+
 ## Deployment
 
 Bu proje Render.com üzerinde deploy edilmiştir. `render.yaml` dosyası deployment yapılandırmasını içerir.
@@ -99,4 +115,6 @@ Bu proje özel bir projedir.
 ## İletişim
 
 Sorularınız için GitHub Issues kullanabilirsiniz.
+
+
 

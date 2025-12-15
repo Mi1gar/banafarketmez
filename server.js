@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const { lobbyManager } = require('./lib/lobbyManagerSingleton.js');
 
 const dev = process.env.NODE_ENV !== 'production';
+// 0.0.0.0 tüm network interface'lerinden erişime izin verir (dışarıdan bağlanma için gerekli)
 const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = process.env.PORT || 3000;
 
