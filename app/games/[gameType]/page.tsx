@@ -407,8 +407,12 @@ export default function GamePage() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.lobby) {
-          // Socket.io'ya da bildir
+        if (data.lobby && data.lobby.status === 'in-game') {
+          // Oyun başlatıldı, direkt yönlendir (game:started event'i gelecek)
+          console.log('Game started via API, redirecting to play page');
+          router.push(`/games/${gameType}/play?lobbyId=${currentLobby.id}`);
+        } else if (data.lobby) {
+          // Lobby güncellendi ama oyun başlamadı, Socket.io event'i gönder
           const socket = getSocket();
           if (socket.connected) {
             socket.emit('lobby:start', {

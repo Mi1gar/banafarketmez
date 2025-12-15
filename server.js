@@ -161,6 +161,20 @@ app.prepare().then(() => {
         console.log('startGame: Attempting to start game for lobby:', data.lobbyId);
         console.log('startGame: Lobby status:', checkLobby.status, 'players:', checkLobby.players.length, 'maxPlayers:', checkLobby.maxPlayers);
         
+        // Eğer lobby zaten in-game status'ündeyse, sadece game:started event'ini tekrar gönder
+        if (checkLobby.status === 'in-game') {
+          console.log('Lobby already in-game, resending game:started event');
+          io.to(`lobby:${checkLobby.id}`).emit('game:started', {
+            lobby: checkLobby,
+            gameType: checkLobby.gameType,
+            players: checkLobby.players,
+            player1Name: checkLobby.players[0],
+            player2Name: checkLobby.players[1] || checkLobby.players[0],
+          });
+          console.log('game:started event re-emitted to lobby:', checkLobby.id);
+          return;
+        }
+        
         const lobby = lobbyManager.startGame(data.lobbyId);
         if (lobby) {
           console.log('Game started for lobby:', lobby.id, 'players:', lobby.players);
