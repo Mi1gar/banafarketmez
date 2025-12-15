@@ -71,17 +71,33 @@ app.prepare().then(() => {
     socket.on('lobby:join', (data) => {
       console.log('lobby:join event received:', data);
       try {
+        if (!data.lobbyId || !data.player) {
+          console.error('Missing lobbyId or player:', data);
+          socket.emit('error', { message: 'lobbyId ve player gerekli' });
+          return;
+        }
+        
         const lobby = lobbyManager.joinLobby(data.lobbyId, data.player);
         if (lobby) {
-          console.log('Player joined lobby:', data.player, 'lobby:', lobby.id, 'players:', lobby.players);
+          console.log('Player joined lobby:', data.player, 'lobby:', lobby.id);
+          console.log('Lobby players now:', lobby.players);
+          console.log('Lobby status:', lobby.status);
           socket.join(`lobby:${lobby.id}`);
           // Lobi odasındaki tüm oyunculara güncellenmiş lobi bilgisini gönder
           io.to(`lobby:${lobby.id}`).emit('lobby:updated', lobby);
+          console.log('lobby:updated event emitted to room:', `lobby:${lobby.id}`);
           // Tüm kullanıcılara lobi listesi güncellendiğini bildir
           io.emit('lobby:list-updated');
-          console.log('lobby:updated and lobby:list-updated events emitted');
+          console.log('lobby:list-updated event emitted to all clients');
         } else {
           console.error('Failed to join lobby:', data.lobbyId, 'player:', data.player);
+          const existingLobby = lobbyManager.getLobby(data.lobbyId);
+          console.error('Existing lobby state:', existingLobby ? {
+            id: existingLobby.id,
+            status: existingLobby.status,
+            players: existingLobby.players,
+            maxPlayers: existingLobby.maxPlayers
+          } : 'null');
           socket.emit('error', { message: 'Lobiye katılamadı (lobi dolu veya bulunamadı)' });
         }
       } catch (error) {

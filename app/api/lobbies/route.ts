@@ -8,12 +8,23 @@ const lobbyManager = lobbyManagerModule.lobbyManager || lobbyManagerModule.defau
 type GameType = 'rock-paper-scissors' | 'tic-tac-toe' | 'number-guessing';
 
 export async function GET(request: NextRequest) {
+  console.log('[API GET /api/lobbies] Request received at:', new Date().toISOString());
   try {
     const searchParams = request.nextUrl.searchParams;
     const gameType = searchParams.get('gameType') as GameType | null;
+    console.log('[API GET /api/lobbies] gameType:', gameType);
+
+    if (!lobbyManager) {
+      console.error('[API GET /api/lobbies] lobbyManager is not available');
+      return NextResponse.json(
+        { error: 'Lobi yöneticisi kullanılamıyor' },
+        { status: 500 }
+      );
+    }
 
     const lobbies = lobbyManager.getAllLobbies(gameType || undefined);
-    console.log('API: Fetching lobbies, found:', lobbies.length, 'for gameType:', gameType);
+    console.log('[API GET /api/lobbies] Found lobbies:', lobbies.length, 'for gameType:', gameType);
+    console.log('[API GET /api/lobbies] Lobby IDs:', lobbies.map(l => l.id));
     
     return NextResponse.json({ lobbies }, { status: 200 });
   } catch (error) {

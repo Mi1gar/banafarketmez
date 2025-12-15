@@ -457,6 +457,10 @@ export default function GamePage() {
             currentUsername={username}
             onLeave={handleLeaveLobby}
             onStartGame={handleStartGame}
+            onLobbyUpdate={(updatedLobby) => {
+              console.log('GamePage: Lobby updated from LobbyRoom:', updatedLobby);
+              setCurrentLobby(updatedLobby);
+            }}
           />
         </div>
       </div>

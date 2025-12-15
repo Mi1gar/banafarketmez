@@ -1,22 +1,83 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/Button';
 import { Lobby, GameType } from '@/lib/lobbyManager';
+import { getSocket } from '@/lib/socket';
 
 interface LobbyRoomProps {
   lobby: Lobby;
   currentUsername: string;
   onLeave: () => void;
   onStartGame: () => void;
+  onLobbyUpdate?: (lobby: Lobby) => void;
 }
 
 export const LobbyRoom: React.FC<LobbyRoomProps> = ({
-  lobby,
+  lobby: initialLobby,
   currentUsername,
   onLeave,
   onStartGame,
+  onLobbyUpdate,
 }) => {
+  const [lobby, setLobby] = useState<Lobby>(initialLobby);
+
+  // Lobi güncellemelerini dinle
+  useEffect(() => {
+    const socket = getSocket();
+    
+    const handleLobbyUpdated = (updatedLobby: Lobby) => {
+      if (updatedLobby.id === lobby.id) {
+        console.log('LobbyRoom: Lobby updated via socket:', updatedLobby);
+        setLobby(updatedLobby);
+        if (onLobbyUpdate) {
+          onLobbyUpdate(updatedLobby);
+        }
+      }
+    };
+
+    const handleLobbyClosed = (data: { lobbyId: string }) => {
+      if (data.lobbyId === lobby.id) {
+        console.log('LobbyRoom: Lobby closed');
+        alert('Lobi kapandı');
+        onLeave();
+      }
+    };
+
+    socket.on('lobby:updated', handleLobbyUpdated);
+    socket.on('lobby:closed', handleLobbyClosed);
+
+    // Periyodik olarak lobi durumunu kontrol et (fallback)
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/lobbies/${lobby.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.lobby) {
+            setLobby(data.lobby);
+            if (onLobbyUpdate) {
+              onLobbyUpdate(data.lobby);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching lobby update:', error);
+      }
+    }, 3000); // 3 saniyede bir
+
+    return () => {
+      socket.off('lobby:updated', handleLobbyUpdated);
+      socket.off('lobby:closed', handleLobbyClosed);
+      clearInterval(interval);
+    };
+  }, [lobby.id, onLeave, onLobbyUpdate]);
+
+  // Initial lobby değiştiğinde state'i güncelle
+  useEffect(() => {
+    if (initialLobby.id === lobby.id) {
+      setLobby(initialLobby);
+    }
+  }, [initialLobby]);
   const gameNames: Record<GameType, string> = {
     'rock-paper-scissors': 'Taş Kağıt Makas',
     'tic-tac-toe': 'Tic Tac Toe',
