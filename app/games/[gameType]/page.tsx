@@ -78,11 +78,12 @@ export default function GamePage() {
 
     const handleLobbyUpdated = (lobby: Lobby) => {
       if (!isMounted) return;
-      console.log('Lobby updated:', lobby);
+      console.log('GamePage: Lobby updated via socket:', lobby);
       // State'i güncelle (closure problemi önlemek için functional update kullan)
       setCurrentLobby((prev) => {
         if (prev && prev.id === lobby.id) {
-          console.log('Updating current lobby state:', lobby);
+          console.log('GamePage: Updating current lobby state:', lobby);
+          console.log('GamePage: Players in updated lobby:', lobby.players);
           return lobby;
         }
         return prev;
