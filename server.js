@@ -77,6 +77,17 @@ app.prepare().then(() => {
           return;
         }
         
+        // Önce mevcut lobby'yi kontrol et
+        const existingLobby = lobbyManager.getLobby(data.lobbyId);
+        if (existingLobby && existingLobby.players.includes(data.player)) {
+          // Oyuncu zaten lobide, sadece socket room'a ekle ve güncelle
+          console.log('Player already in lobby, just joining socket room:', data.player);
+          socket.join(`lobby:${existingLobby.id}`);
+          io.to(`lobby:${existingLobby.id}`).emit('lobby:updated', existingLobby);
+          io.emit('lobby:list-updated');
+          return;
+        }
+
         const lobby = lobbyManager.joinLobby(data.lobbyId, data.player);
         if (lobby) {
           console.log('Player joined lobby:', data.player, 'lobby:', lobby.id);
@@ -91,12 +102,12 @@ app.prepare().then(() => {
           console.log('lobby:list-updated event emitted to all clients');
         } else {
           console.error('Failed to join lobby:', data.lobbyId, 'player:', data.player);
-          const existingLobby = lobbyManager.getLobby(data.lobbyId);
-          console.error('Existing lobby state:', existingLobby ? {
-            id: existingLobby.id,
-            status: existingLobby.status,
-            players: existingLobby.players,
-            maxPlayers: existingLobby.maxPlayers
+          const checkLobby = lobbyManager.getLobby(data.lobbyId);
+          console.error('Existing lobby state:', checkLobby ? {
+            id: checkLobby.id,
+            status: checkLobby.status,
+            players: checkLobby.players,
+            maxPlayers: checkLobby.maxPlayers
           } : 'null');
           socket.emit('error', { message: 'Lobiye katılamadı (lobi dolu veya bulunamadı)' });
         }
@@ -139,6 +150,17 @@ app.prepare().then(() => {
           return;
         }
         
+        // Önce lobby'yi kontrol et
+        const checkLobby = lobbyManager.getLobby(data.lobbyId);
+        if (!checkLobby) {
+          console.error('startGame: Lobby not found:', data.lobbyId);
+          socket.emit('error', { message: 'Oyun başlatılamadı (lobi bulunamadı)' });
+          return;
+        }
+        
+        console.log('startGame: Attempting to start game for lobby:', data.lobbyId);
+        console.log('startGame: Lobby status:', checkLobby.status, 'players:', checkLobby.players.length, 'maxPlayers:', checkLobby.maxPlayers);
+        
         const lobby = lobbyManager.startGame(data.lobbyId);
         if (lobby) {
           console.log('Game started for lobby:', lobby.id, 'players:', lobby.players);
@@ -153,6 +175,13 @@ app.prepare().then(() => {
           console.log('game:started event emitted to lobby:', lobby.id);
         } else {
           console.error('Failed to start game for lobby:', data.lobbyId);
+          const currentLobby = lobbyManager.getLobby(data.lobbyId);
+          console.error('Current lobby state:', currentLobby ? {
+            id: currentLobby.id,
+            status: currentLobby.status,
+            players: currentLobby.players,
+            maxPlayers: currentLobby.maxPlayers
+          } : 'null');
           socket.emit('error', { message: 'Oyun başlatılamadı (lobi bulunamadı veya dolu değil)' });
         }
       } catch (error) {
