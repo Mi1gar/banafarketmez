@@ -210,7 +210,7 @@ app.prepare().then(() => {
           console.log('game:started event emitted to lobby:', lobby.id, 'data:', JSON.stringify(gameStartedData));
           
           // Ayrıca tüm oyunculara direkt olarak da gönder (fallback)
-          lobby.players.forEach((player: string) => {
+          lobby.players.forEach((player) => {
             console.log('Sending game:started to player:', player);
           });
         } else {
